@@ -1,0 +1,58 @@
+pipeline {
+    agent {label 'master'}
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        skipDefaultCheckout(true)
+        disableConcurrentBuilds()
+        timeout (time: 10, unit: 'MINUTES')
+        timestamps()
+    }
+    parameters { 
+        string (name: 'branchName', defaultValue: 'develop', description: 'The release branch that you want to checkout')
+    }
+    stages {
+         stage ('Checkout repo') {
+            steps {
+                dir("${WORKSPACE}/code/repo1") {
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: "*/${params.branchName}"]],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [[$class: 'LocalBranch']],
+                        submoduleCfg: [],
+                        userRemoteConfigs: [[
+                        url: 'https://github.com/repo1',
+                        credentialsId: 'github-credential'
+                        ]]
+                    ])
+                }
+                dir("${WORKSPACE}/code/repo2") {
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: "*/${params.branchName}"]],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [[$class: 'LocalBranch']],
+                        submoduleCfg: [],
+                        userRemoteConfigs: [[
+                        url: 'https://github.com/repo2',
+                        credentialsId: 'github-credential'
+                        ]]
+                    ])
+                }
+                dir("${WORKSPACE}/code/repo3") {
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: "*/${params.branchName}"]],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [[$class: 'LocalBranch']],
+                        submoduleCfg: [],
+                        userRemoteConfigs: [[
+                        url: 'https://github.com/repo3',
+                        credentialsId: 'github-credential'
+                        ]]
+                    ])
+                }
+            }
+        }
+    }
+}

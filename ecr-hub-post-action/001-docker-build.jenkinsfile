@@ -1,0 +1,225 @@
+pipeline {
+    agent any
+
+    // triggers {
+    //     githubPush()
+    // }
+    environment {
+        DOCKER_HUB_REGISTRY = "devopseasylearning"
+    }
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '5'))
+        skipDefaultCheckout(true)
+        disableConcurrentBuilds()
+        timeout (time: 30, unit: 'MINUTES')
+        timestamps()
+    }
+    parameters {
+        string (name: 'BRANCH_NAME', defaultValue: 'dev', description: '')
+    }
+    stages {
+        stage ('Sanity Check') {
+            steps {
+                script {
+                   sanityChecks()
+                }
+            }
+        }
+        stage ('Checkout') {
+            steps {
+                dir("${WORKSPACE}/code") {
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: "*/${params.BRANCH_NAME}"]],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [[$class: 'LocalBranch']],
+                        submoduleCfg: [],
+                        userRemoteConfigs: [[
+                        url: 'https://github.com/devopstia/pipelines.git',
+                        credentialsId: 'tia-github-auth'
+                        ]]
+                    ])
+                }
+            }
+        }
+        stage ('Building the UI') {
+            steps {
+                dir("${WORKSPACE}/code") {
+                    script {
+                        sh """
+                        cd ${WORKSPACE}/code/application/weather-app/ui
+                        sudo docker build -t ${env.DOCKER_HUB_REGISTRY}/apha-ui:latest .
+                        sudo docker images
+                        """
+                    }
+                }
+            }
+        }
+        stage ('Building the AUTH') {
+            steps {
+                dir("${WORKSPACE}/code") {
+                    script {
+                        sh """
+                        cd ${WORKSPACE}/code/application/weather-app/auth
+                        sudo docker build -t ${env.DOCKER_HUB_REGISTRY}/apha-auth:latest .
+                        sudo docker images
+                        """
+                    }
+                }
+            }
+        }
+        stage ('Building the WEATHER') {
+            steps {
+                dir("${WORKSPACE}/code") {
+                    script {
+                        sh """
+                        cd ${WORKSPACE}/code/application/weather-app/weather
+                        sudo docker build -t ${env.DOCKER_HUB_REGISTRY}/apha-weather:latest .
+                        sudo docker images
+                        """
+                    }
+                }
+            }
+        }
+        stage ('Building the DB') {
+            steps {
+                dir("${WORKSPACE}/code") {
+                    script {
+                        sh """
+                        cd ${WORKSPACE}/code/application/weather-app/db
+                        sudo docker build -t ${env.DOCKER_HUB_REGISTRY}/apha-db:latest .
+                        sudo docker images
+                        """
+                    }
+                }
+            }
+        }
+        stage ('Building the Redis') {
+            steps {
+                dir("${WORKSPACE}/code") {
+                    script {
+                        sh """
+                        cd ${WORKSPACE}/code/application/weather-app/redis
+                        sudo docker build -t ${env.DOCKER_HUB_REGISTRY}/apha-redis:latest .
+                        sudo docker images
+                        """
+                    }
+                }
+            }
+        }
+        stage ('Login Into Docker Hub') {
+            steps {
+               withCredentials([
+                    usernamePassword(credentialsId: 'docker-hub-cred', 
+                    usernameVariable: 'DOCKER_HUB_USERNAME', 
+                    passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
+                        sh """
+                            sudo docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
+                        """   
+
+                } 
+            }
+        }
+        // stage ('Pushing Images Into Docker Hub') {
+        //     steps {
+        //         script {
+        //             sh """
+        //                 sudo docker push devopseasylearning/apha-ui:latest
+        //                 sudo docker push devopseasylearning/apha-auth:latest
+        //                 sudo docker push devopseasylearning/apha-weather:latest
+        //                 sudo docker push devopseasylearning/apha-redis:latest
+        //                 sudo docker push devopseasylearning/apha-db:latest
+        //             """ 
+        //         }
+        //     }
+        // }
+        stage ('Pushing UI Into Docker Hub') {
+            steps {
+                script {
+                    sh """
+                        sudo docker push devopseasylearning/apha-ui:latest
+                    """ 
+                }
+            }
+        }
+        stage ('Pushing AUTH Into Docker Hub') {
+            steps {
+                script {
+                    sh """
+                        sudo docker push devopseasylearning/apha-auth:latest
+                    """ 
+                }
+            }
+        }
+        stage ('Pushing Weather Into Docker Hub') {
+            steps {
+                script {
+                    sh """
+                        sudo docker push devopseasylearning/apha-weather:latest
+                    """ 
+                }
+            }
+        }
+        stage ('Pushing Redis Into Docker Hub') {
+            steps {
+                script {
+                    sh """
+                        sudo docker push devopseasylearning/apha-redis:latest
+                    """ 
+                }
+            }
+        }
+        stage ('Pushing DB Into Docker Hub') {
+            steps {
+                script {
+                    sh """
+                        sudo docker push devopseasylearning/apha-db:latest
+                    """ 
+                }
+            }
+        }
+    }
+    post {
+        success {
+            slackSend color: '#2EB67D',
+            channel: 'testing-tia', 
+            message: "*Alpha Project Build Status*" +
+            "\n Project Name: Alpha" +
+            "\n Job Name: ${env.JOB_NAME}" +
+            "\n Build number: ${currentBuild.displayName}" +
+            "\n Build Status : *SUCCESS*" +
+            "\n Build url : ${env.BUILD_URL}"
+        }
+        failure {
+            slackSend color: '#E01E5A',
+            channel: 'testing-tia',  
+            message: "*Alpha Project Build Status*" +
+            "\n Project Name: Alpha" +
+            "\n Job Name: ${env.JOB_NAME}" +
+            "\n Build number: ${currentBuild.displayName}" +
+            "\n Build Status : *FAILED*" +
+            "\n Action : Please check the console output to fix this job IMMEDIATELY" +
+            "\n Build url : ${env.BUILD_URL}"
+        }
+        unstable {
+            slackSend color: '#ECB22E',
+            channel: 'testing-tia', 
+            message: "*Alpha Project Build Status*" +
+            "\n Project Name: Alpha" +
+            "\n Job Name: ${env.JOB_NAME}" +
+            "\n Build number: ${currentBuild.displayName}" +
+            "\n Build Status : *UNSTABLE*" +
+            "\n Action : Please check the console output to fix this job IMMEDIATELY" +
+            "\n Build url : ${env.BUILD_URL}"
+        }   
+    }
+}
+
+def sanityChecks() {
+    if (params.BRANCH_NAME.isEmpty()) {
+        println('Parameter BRANCH_NAME is not set')
+        sh """
+            exit 2
+        """
+    }
+}

@@ -1,0 +1,89 @@
+pipeline {
+    agent any
+    parameters {
+        string (name: 'BRANCH_NAME', defaultValue: 'dev', description: '')
+        string (name: 'APP_NAME', defaultValue: 'articles', description: '')
+    }
+    
+    stages {
+        stage ('Checkout') {
+            steps {
+                dir("${WORKSPACE}/code") {
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: "*/${env.BRANCH_NAME}"]],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [[$class: 'LocalBranch']],
+                        submoduleCfg: [],
+                        userRemoteConfigs: [[
+                            url: 'https://github.com/devopstia/pipelines.git',
+                            credentialsId: 'tia-github-auth'
+                        ]]
+                    ])
+                }
+            }
+        }
+        stage('Remove Existing sonar-project.properties') {
+            steps {
+                dir("${WORKSPACE}/code/application/${params.APP_NAME}") {
+                    script {
+                        sh """
+                            rm -rf sonar-project.properties || true
+                        """
+                    }
+                }
+            }
+        }
+        stage('Create sonar-project.properties') {
+            steps {
+                dir("${WORKSPACE}/code/application/${params.APP_NAME}") {
+                    script {
+                        // Define the content of sonar-project.properties
+                        def sonarProjectPropertiesContent = """
+                            sonar.host.url=https://sonarqube.ektechsoftwaresolution.com/
+                            sonar.projectKey=test-sonar2
+                            sonar.projectName=test-sonar2
+                            sonar.projectVersion=1.0
+                            sonar.sources=.
+                            qualitygate.wait=true
+                        """
+
+                        // Create the sonar-project.properties file
+                        writeFile file: 'sonar-project.properties', text: sonarProjectPropertiesContent
+                    }
+                }
+            }
+        }
+        stage('Open sonar-project.properties') {
+            steps {
+                dir("${WORKSPACE}/code/application/${params.APP_NAME}") {
+                    script {
+                        // Use 'cat' command to display the content of sonar-project.properties
+                        sh 'cat sonar-project.properties'
+                    }
+                }
+            }
+        }
+        stage('SonarQube analysis') {
+            steps {
+                script {
+                    def sourceCodeDir = "${WORKSPACE}/code/application/${params.APP_NAME}"
+                    def scannerHome='/opt/sonar-scanner'
+                    dir(sourceCodeDir) {
+                        docker.image('sonarsource/sonar-scanner-cli:5').inside {
+                            withSonarQubeEnv('SonarScanner') { // this SonarScanner must be the same as the one configire in global in jenkins so that SonarQube will get the credentials to publish of SonarQube analysis to SonarQube UI
+                                sh "ls"
+                                sh "${scannerHome}/bin/sonar-scanner"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage('Clean Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+    }
+}

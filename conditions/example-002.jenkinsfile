@@ -1,0 +1,34 @@
+pipeline {
+    agent {
+       label 'master'
+    }
+    
+    stages {
+        stage ('Setting Up Variables') {
+            steps {
+                script {
+                    wrap([$class: 'BuildUser']) {
+                        def BUILD_USER_ID = env.BUILD_USER_ID
+                        echo "BUILD_USER -- full name of user started build: $BUILD_USER"
+                        echo "BUILD_USER_FIRST_NAME -- first name of user started build: $BUILD_USER_FIRST_NAME"
+                        echo "BUILD_USER_LAST_NAME -- last name of user started build: $BUILD_USER_LAST_NAME"
+                        echo "BUILD_USER_ID -- id of user started build: $BUILD_USER_ID"
+                        echo "BUILD_USER_EMAIL -- email of user started build: $BUILD_USER_EMAIL"
+                        
+                        if (BUILD_USER_ID == 'tia' || BUILD_USER_ID == 'tom' || BUILD_USER_ID == 'paul' || BUILD_USER_ID == 'smith' || BUILD_USER_ID == 'jean') {
+                            echo "User is one of 'tia', 'tom', 'paul', 'smith', or 'jean', running the job..."
+                            // Add your job steps here
+                        } else {
+                            echo "User is not one of the specified names, skipping the job."
+                        }
+                    }
+                }
+            }
+        }
+        stage ('Clean up') {
+            steps {
+                cleanWs()
+            }
+        }
+    }
+}

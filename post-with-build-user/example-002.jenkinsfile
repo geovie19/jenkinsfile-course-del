@@ -1,0 +1,67 @@
+pipeline {
+    agent any
+    stages {
+        stage('test') {
+            steps {
+                script {
+                    sh """
+                        ls -l
+                    """
+                }
+            }
+        }
+    }
+    post {
+        success {
+            script {
+                wrap([$class: 'BuildUser']) {
+                    slackSend color: '#2EB67D',
+                    channel: 'learning', 
+                    message: "*Alpha Project Build Status*" +
+                    "\n Project Name: Alpha" +
+                    "\n Job Name: ${env.JOB_NAME}" +
+                    "\n Build number: ${currentBuild.displayName}" +
+                    "\n Build Status : *SUCCESS*" +
+                    "\n Build User Full Name: ${env.BUILD_USER}" +
+                    "\n Build User Email: ${env.BUILD_USER_EMAIL}" +
+                    "\n Build URL: <${env.JOB_DISPLAY_URL}|Click Here>"
+                }
+            }
+        }
+        failure {
+            script {
+                wrap([$class: 'BuildUser']) {
+                    slackSend color: '#E01E5A',
+                    channel: 'learning',  
+                    message: "*Alpha Project Build Status*" +
+                    "\n Project Name: Alpha" +
+                    "\n Job Name: ${env.JOB_NAME}" +
+                    "\n Build number: ${currentBuild.displayName}" +
+                    "\n Build Status : *FAILED*" +
+                    "\n Build User Full Name: ${env.BUILD_USER}" +
+                    "\n Build User Email: ${env.BUILD_USER_EMAIL}" +
+                    "\n Action: Please check the console output to fix this job IMMEDIATELY" +
+                    "\n Build URL: <${env.JOB_DISPLAY_URL}|Click Here>"
+                }
+            }
+        }
+        unstable {
+            script {
+                wrap([$class: 'BuildUser']) {
+                    slackSend color: '#ECB22E',
+                    channel: 'learning', 
+                    message: "*Alpha Project Build Status*" +
+                    "\n Project Name: Alpha" +
+                    "\n Job Name: ${env.JOB_NAME}" +
+                    "\n Build number: ${currentBuild.displayName}" +
+                    "\n Build Status : *UNSTABLE*" +
+                    "\n Build User Full Name: ${env.BUILD_USER}" +
+                    "\n Build User Email: ${env.BUILD_USER_EMAIL}" +
+                    "\n Action: Please check the console output to fix this job IMMEDIATELY" +
+                    "\n Build URL: <${env.JOB_DISPLAY_URL}|Click Here>"
+                }
+            }
+            
+        }   
+    }
+}

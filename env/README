@@ -1,0 +1,81 @@
+## Build in variables or environment variables
+* [jenkins-url][/env-vars.html/]
+* Example: http://10.0.0.3:8080/env-vars.html/
+
+```sh
+[Pipeline] (Displaying Environment Variables)
+[Pipeline] echo
+The build number is: 6
+[Pipeline] echo
+The job name is: instructors/tia/t
+[Pipeline] echo
+The Jenkins home directory is: /var/lib/jenkins
+[Pipeline] echo
+The Jenkins URL is: https://a1jenkins.devopseasylearning.net/
+[Pipeline] echo
+The build URL is: https://a1jenkins.devopseasylearning.net/job/instructors/job/tia/job/t/6/
+[Pipeline] echo
+The job URL is: https://a1jenkins.devopseasylearning.net/job/instructors/job/tia/job/t/
+[Pipeline] echo
+The workspace is: /home/ubuntu/workspace/instructors/tia/t
+[Pipeline] echo
+BUILD_DISPLAY_NAME: #6
+[Pipeline] echo
+BUILD_TIMESTAMP: 2023-10-25 10:35:30 UTC
+[Pipeline] echo
+JOB_DISPLAY_URL: https://a1jenkins.devopseasylearning.net/job/instructors/job/tia/job/t/display/redirect
+[Pipeline] echo
+BUILD_URL_ANCHOR: https://a1jenkins.devopseasylearning.net/job/instructors/job/tia/job/t/6//console
+[Pipeline] echo
+WORKSPACE: /home/ubuntu/workspace/instructors/tia/t
+```
+
+
+```sh
+# RESULT
+
+JAVA_URL_VERSION=8u242b08
+JENKINS_HOME=/var/jenkins_home
+JENKINS_UC_EXPERIMENTAL=https://updates.jenkins.io/experimental
+RUN_CHANGES_DISPLAY_URL=http://ec2-18-218-82-126.us-east-2.compute.amazonaws.com:8070/job/test3/16/display/redirect?page=changes
+HOSTNAME=20f98983f366
+NODE_LABELS=master
+HUDSON_URL=http://ec2-18-218-82-126.us-east-2.compute.amazonaws.com:8070/
+SHLVL=0
+JAVA_BASE_URL=https://github.com/AdoptOpenJDK/openjdk8-upstream-binaries/releases/download/jdk8u242-b08/OpenJDK8U-jdk_
+HOME=/var/jenkins_home
+BUILD_URL=http://ec2-18-218-82-126.us-east-2.compute.amazonaws.com:8070/job/test3/16/
+HUDSON_COOKIE=d558b4aa-b6d3-4a21-8c5e-162d8eaa979c
+JENKINS_SERVER_COOKIE=durable-f72a3f1ae3cbdbf804dd3f9733df43b7
+JENKINS_UC=https://updates.jenkins.io
+WORKSPACE=/var/jenkins_home/workspace/test3
+REF=/usr/share/jenkins/ref
+JAVA_VERSION=8u242
+NODE_NAME=master
+RUN_ARTIFACTS_DISPLAY_URL=http://ec2-18-218-82-126.us-east-2.compute.amazonaws.com:8070/job/test3/16/display/redirect?page=artifacts
+STAGE_NAME=Build
+EXECUTOR_NUMBER=0
+JENKINS_VERSION=2.276
+RUN_TESTS_DISPLAY_URL=http://ec2-18-218-82-126.us-east-2.compute.amazonaws.com:8070/job/test3/16/display/redirect?page=tests
+JENKINS_INCREMENTALS_REPO_MIRROR=https://repo.jenkins-ci.org/incrementals
+BUILD_DISPLAY_NAME=#16
+HUDSON_HOME=/var/jenkins_home
+JOB_BASE_NAME=test3
+PATH=/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+BUILD_ID=16
+BUILD_TAG=jenkins-test3-16
+LANG=C.UTF-8
+JENKINS_URL=http://ec2-18-218-82-126.us-east-2.compute.amazonaws.com:8070/
+JOB_URL=http://ec2-18-218-82-126.us-east-2.compute.amazonaws.com:8070/job/test3/
+BUILD_NUMBER=16
+JENKINS_NODE_COOKIE=faba0145-bbbb-4abe-8051-5efbcc3f74ee
+RUN_DISPLAY_URL=http://ec2-18-218-82-126.us-east-2.compute.amazonaws.com:8070/job/test3/16/display/redirect
+JENKINS_SLAVE_AGENT_PORT=50000
+HUDSON_SERVER_COOKIE=ff987be319ec3889
+JOB_DISPLAY_URL=http://ec2-18-218-82-126.us-east-2.compute.amazonaws.com:8070/job/test3/display/redirect
+JOB_NAME=test3
+COPY_REFERENCE_FILE_LOG=/var/jenkins_home/copy_reference_file.log
+JAVA_HOME=/usr/local/openjdk-8
+PWD=/var/jenkins_home/workspace/test3
+WORKSPACE_TMP=/var/jenkins_home/workspace/test3@tmp
+```

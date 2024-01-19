@@ -1,0 +1,18 @@
+pipeline {
+    agent {
+        label "Node1 || Node2 || Node3 || Node4"
+    }
+    stages {
+        stage('Hello') {
+            steps {
+                sh '''
+                ls 
+                pwd
+                '''
+            }
+        }
+    }
+}
+
+
+any

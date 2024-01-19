@@ -1,0 +1,49 @@
+pipeline {
+    agent {label 'master'}
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        skipDefaultCheckout(true)
+        disableConcurrentBuilds()
+        timeout (time: 10, unit: 'MINUTES')
+        timestamps()
+    }
+    parameters { 
+        string (name: 'branchName', defaultValue: 'develop', description: 'The release branch that you want to checkout')
+    }
+    stages {
+         stage ('Checkout repo1') {
+            steps {
+                dir("${WORKSPACE}/code1") {
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: "*/${params.branchName}"]],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [[$class: 'LocalBranch']],
+                        submoduleCfg: [],
+                        userRemoteConfigs: [[
+                        url: 'https://github.com/repo1',
+                        credentialsId: 'github-credential'
+                        ]]
+                    ])
+                }
+            }
+        }
+        stage ('Checkout repo2') {
+            steps {
+                dir("${WORKSPACE}/code2") {
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: "*/${params.branchName}"]],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [[$class: 'LocalBranch']],
+                        submoduleCfg: [],
+                        userRemoteConfigs: [[
+                        url: 'https://github.com/repo2',
+                        credentialsId: 'github-credential'
+                        ]]
+                    ])
+                }
+            }
+        }
+    }
+}

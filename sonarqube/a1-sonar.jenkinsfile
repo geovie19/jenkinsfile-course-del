@@ -1,0 +1,106 @@
+pipeline {
+    agent {
+        label 'master'
+    }
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '7'))
+        skipDefaultCheckout(true)
+        disableConcurrentBuilds()
+        timeout (time: 1, unit: 'MINUTES')
+        timestamps()
+    }
+    parameters {
+        string(name: 'BRANCH_NAME', defaultValue: 'main', description: '')
+        string(name: 'SONAR_VERSION', defaultValue: '5.0.1.3006', description: '')
+    }
+    stages {
+        stage ('Checkout') {
+            steps {
+                dir("${WORKSPACE}/weather-app") {
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: "*/${env.BRANCH_NAME}"]],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [[$class: 'LocalBranch']],
+                        submoduleCfg: [],
+                        userRemoteConfigs: [[
+                            url: 'https://github.com/devopstia/a1.git',
+                            credentialsId: 'github-auth'
+                        ]]
+                    ])
+                }
+            }
+        }
+        stage ('Install SonarQube') {
+            steps {
+                script {
+                    sh """
+                        sudo apt update -y
+                        sudo apt install nodejs npm wget unzip -y              
+                        wget -q https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${params.SONAR_VERSION}-linux.zip
+                        unzip sonar-scanner-cli-${params.SONAR_VERSION}-linux.zip
+                        sudo mv sonar-scanner-${params.SONAR_VERSION}-linux sonar-scanner
+                        sudo rm -rf  /var/opt/sonar-scanner || true
+                        sudo mv sonar-scanner /var/opt/
+                        sudo rm -rf /usr/local/bin/sonar-scanner || true
+                        sudo ln -s /var/opt/sonar-scanner/bin/sonar-scanner /usr/local/bin/ || true
+                        sonar-scanner -v
+                    """
+                }
+            }
+        }
+        stage('Remove Existing sonar-project.properties') {
+            steps {
+                dir("${WORKSPACE}/weather-app/application/weather-app/code") {
+                    script {
+                        // Check if sonar-project.properties exists and remove it if found
+                        if (fileExists('sonar-project.properties')) {
+                            sh 'rm sonar-project.properties'
+                        }
+                    }
+                }
+            }
+        }
+        stage('Create sonar-project.properties') {
+            steps {
+                dir("${WORKSPACE}/weather-app/application/weather-app/code") {
+                    script {
+                        // Define the content of sonar-project.properties
+                        def sonarProjectPropertiesContent = """
+                            sonar.host.url=https://sonarqube.ektechsoftwaresolution.com/
+                            sonar.projectKey=a1-weather-app-project
+                            sonar.projectName=a1-weather-app-project
+                            sonar.projectVersion=1.0
+                            sonar.sources=.
+                            qualitygate.wait=true 
+                        """
+
+                        // Create the sonar-project.properties file
+                        writeFile file: 'sonar-project.properties', text: sonarProjectPropertiesContent
+                    }
+                }
+            }
+        }
+        stage('Open sonar-project.properties') {
+            steps {
+                dir("${WORKSPACE}/weather-app/application/weather-app/code") {
+                    script {
+                        // Use 'cat' command to display the content of sonar-project.properties
+                        sh 'cat sonar-project.properties'
+                    }
+                }
+            }
+        }
+        stage('SonarQube Analysis') {
+            steps {
+                dir("${WORKSPACE}/weather-app/application/weather-app/code") {
+                    script {
+                        withSonarQubeEnv('SonarScanner') {
+                            sh "sonar-scanner"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

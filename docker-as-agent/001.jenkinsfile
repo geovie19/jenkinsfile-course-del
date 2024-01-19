@@ -1,0 +1,89 @@
+pipeline {
+    agent {
+        label 'aws-deploy'
+    }
+    parameters {
+        string (name: 'BRANCH_NAME', defaultValue: 'dev', description: '')
+    }
+    
+    stages {
+        stage ('Checkout') {
+            steps {
+                dir("${WORKSPACE}/code") {
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: "*/${env.BRANCH_NAME}"]],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [[$class: 'LocalBranch']],
+                        submoduleCfg: [],
+                        userRemoteConfigs: [[
+                            url: 'https://github.com/devopstia/pipelines.git',
+                            credentialsId: 'tia-github-auth'
+                        ]]
+                    ])
+                }
+            }
+        }
+        stage('SonarQube analysis') {
+            steps {
+                script {
+                    def sourceCodeDir = "${WORKSPACE}/code/application/${params.APP_NAME}"
+                    def scannerHome='/opt/sonar-scanner'
+                    dir(sourceCodeDir) {
+                        docker.image('sonarsource/sonar-scanner-cli:5').inside {
+                            withSonarQubeEnv('SonarScanner') { // this SonarScanner must be the same as the one configire in global in jenkins so that SonarQube will get the credentials to publish of SonarQube analysis to SonarQube UI
+                                sh "ls"
+                                sh "${scannerHome}/bin/sonar-scanner"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage('Test auth') {
+	     agent {
+            docker {
+              image 'golang:alpine'
+              args '-u root:root'
+            }
+           }
+            steps {
+                sh '''
+                    id
+                    cd weatherapp/auth/src/main
+                    go build 
+                    cd -
+                    ls -la
+                '''
+            }
+        }
+         stage('Test UI') {
+	     agent {
+            docker {
+              image 'node:17'
+              args '-u root:root'
+            }
+           }
+            steps {
+                sh '''
+                    cd weatherapp/UI
+                    npm run
+                '''
+            }
+        }
+        stage('Test weather') {
+	     agent {
+            docker {
+              image 'python:3.8-slim-buster'
+              args '-u root:root'
+            }
+           }
+            steps {
+                sh '''
+                    cd weatherapp/weather
+                    pip3 install -r requirements.txt
+                '''
+            }
+        }
+    }
+}

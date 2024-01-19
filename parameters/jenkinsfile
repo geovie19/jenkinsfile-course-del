@@ -1,0 +1,292 @@
+pipeline {
+    agent {label 'api-build'}
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        skipDefaultCheckout(true)
+        disableConcurrentBuilds()
+        timeout (time: 10, unit: 'MINUTES')
+        timestamps()
+    }
+    parameters { 
+        string (name: 'branchName', defaultValue: 'develop', description: 'The release branch that you want to checkout')
+
+        string (name: 'uexComponent', defaultValue: '', description: 'The UEX component that you want to update\nValid Options: \n\t- ess-api\n\t- dal\n\t- api-ms-docs\n\t- mss\n\t- api-ms-docs-v2\n\t- ess\n\t- app-obbe\n\t- obbe-api\n\t- app-auth\n\t- api-ms-config\n\t- uex-ess\n\t- uex-app-obbe')
+
+        string (name: 'hotfixReference', defaultValue: 'https://fwdavison.atlassian.net/browse/REL-1593', description: 'The code branch repo that you want to checkout')
+
+        booleanParam (name: 'restartNginx', defaultValue: true, description: 'Restart Nginx or proxy')
+
+        choice (name: 'apiEnvironment', 
+        choices: '\nprodstgapi\nprodstgapi2', 
+        description: 'Choice the environment where to promote the API')
+
+    }
+
+    parameters {
+        string(name: 'GIT_REPO', defaultValue: 'https://github.com/yourusername/yourrepo.git', description: 'Git repository URL')
+        booleanParam(name: 'BUILD_DOCS', defaultValue: false, description: 'Build documentation')
+        choice(name: 'DEPLOY_ENV', choices: ['development', 'staging', 'production'], description: 'Deployment environment')
+        password(name: 'API_KEY', defaultValue: '', description: 'API key for external services')
+        file(name: 'CONFIG_FILE', description: 'Configuration file to use')
+    }
+
+    stages {
+         stage ('Checkout') {
+            steps {
+                dir("${WORKSPACE}/code") {
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: "*/${params.branchName}"]],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [[$class: 'LocalBranch']],
+                        submoduleCfg: [],
+                        userRemoteConfigs: [[
+                        url: 'https://github.com/repo',
+                        credentialsId: 'github-credential'
+                        ]]
+                    ])
+                }
+            }
+        }
+    }
+}
+
+
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'DEPLOY_ENV', defaultValue: 'production', description: 'Deployment environment')
+        booleanParam(defaultValue: true, description: 'Clean build directory', name: 'CLEAN_BUILD')
+        choice(name: 'BUILD_TYPE', choices: ['debug', 'release'], description: 'Build type')
+        choice(name: 'BUILD_TYPE', choices: ['', 'debug', 'release'], description: 'Build type')
+
+        choice (name: 'ENVIRONMENT', 
+        choices: '\nprod\nqa\nstg', 
+        description: 'Choice the environment where to promote the API')
+
+        password(name: 'API_KEY', defaultValue: '', description: 'API key')
+        file(name: 'CONFIG_FILE', description: 'Configuration file')
+        text(name: 'RELEASE_NOTES', defaultValue: '', description: 'Release notes')
+        text(name: 'SLACK_MASSAGE', defaultValue: '', description: 'Release notes')
+    }
+
+    stages {
+        stage('Parameter Test') {
+            steps {
+                script {
+                    echo "Deploy Environment: ${params.DEPLOY_ENV}"
+                    echo "Clean Build: ${params.CLEAN_BUILD}"
+                    echo "Build Type: ${params.BUILD_TYPE}"
+                    echo "API Key: ${params.API_KEY}"
+                    echo "Configuration File: ${params.CONFIG_FILE}"
+                    echo "Release Notes:\n${params.RELEASE_NOTES}"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Build succeeded!'
+            // Add post-build actions here
+        }
+        failure {
+            echo 'Build failed!'
+            // Add failure actions here
+        }
+    }
+}
+
+
+
+pipeline {							
+    agent any							
+    parameters {							
+        string(name: 'environment', defaultValue: 'Dev', description: 'Environment to build for (Valid values: Dev, Test, Prod)')
+		string(name: 'version', defaultValue: '1.0', description: 'Version number to build for')
+		booleanParam(name: 'to_deploy_to_environment', defaultValue: true, description: '')
+		choice(choices: 'US-EAST-1\nUS-WEST-2', description: 'What AWS region?', name: 'region')
+		text(name:'myText', defaultValue:'myTextValue', description:'myText')
+		password(name:'myPassword', defaultValue:'myPasswordValue', description:'myDescription')
+		file(name:'myFile', description:'fileDescription')
+		credentials(name:'myCredentials', description:'myCredentailsDesc', required:true)					
+    }							
+    stages {							
+        stage('Example') {							
+            steps {							
+                echo "We are building for ${params.environment}, ${params.version}, and we are deploying to environment: ${params.to_deploy_to_environment}"
+				echo "region:${params.region}, myText: ${params.myText}, myPassword: ${params.myPassword}, and myFile: ${params.myFile}"
+				echo "selected credentials is: ${params.myCredentials}"
+            }							
+        }							
+    }							
+}							
+
+
+
+pipeline {
+    agent any
+    
+    parameters {
+        string(name: 'MY_PARAMETER', defaultValue: '', description: 'My custom parameter')
+    }
+    
+    stages {
+        stage('Check Parameter') {
+            steps {
+                script {
+                    if (params.MY_PARAMETER) {
+                        // The parameter is set
+                        echo "Parameter MY_PARAMETER is set to ${params.MY_PARAMETER}"
+                        // Add your actions for when the parameter is set here
+                    } else {
+                        // The parameter is not set
+                        echo "Parameter MY_PARAMETER is not set"
+                        // Add your actions for when the parameter is not set here
+                    }
+                }
+            }
+        }
+        
+        // Add more stages for your pipeline here
+    }
+    
+    post {
+        // Define post-build actions here
+    }
+}
+
+
+
+pipeline {
+    agent any
+    
+    parameters {
+        string(name: 'MY_PARAMETER', defaultValue: '', description: 'My custom parameter')
+    }
+    
+    stages {
+        stage('Check Parameter') {
+            steps {
+                script {
+                    if (params.MY_PARAMETER.isEmpty()) {
+                        // The parameter is not set
+                        echo "Parameter MY_PARAMETER is not set"
+                        
+                        // Add actions for when the parameter is not set
+                        // For example, you can skip this stage or perform a different task
+                    } else {
+                        // The parameter is set
+                        echo "Parameter MY_PARAMETER is set to ${params.MY_PARAMETER}"
+                        
+                        // Add actions for when the parameter is set
+                        // For example, you can trigger a specific build job
+                        build(job: 'MyParameterSetJob')
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+pipeline {
+    agent any
+    
+    parameters {
+        string(name: 'MY_PARAMETER', defaultValue: '', description: 'My custom parameter')
+    }
+    
+    stages {
+        stage('Check Parameter') {
+            steps {
+                script {
+                    if (!(params.MY_PARAMETER.isEmpty())) {
+                        // The parameter is not empty
+                        echo "Parameter MY_PARAMETER is not empty and is set to ${params.MY_PARAMETER}"
+                        
+                        // Add actions for when the parameter is not empty
+                        // For example, you can proceed with some specific tasks
+                    } else {
+                        // The parameter is empty
+                        echo "Parameter MY_PARAMETER is empty"
+                        
+                        // Add actions for when the parameter is empty
+                        // For example, you can skip this stage or perform different tasks
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+pipeline {
+    agent any
+    
+    parameters {
+        string(name: 'MY_PARAMETER', defaultValue: '', description: 'My custom parameter')
+    }
+    
+    stages {
+        stage('Check Parameter') {
+            steps {
+                script {
+                    if (params.MY_PARAMETER.isNotEmpty()) {
+                        // The parameter is not empty
+                        echo "Parameter MY_PARAMETER is not empty and is set to ${params.MY_PARAMETER}"
+                        
+                        // Add actions for when the parameter is not empty
+                        // For example, you can proceed with some specific tasks
+                    } else {
+                        // The parameter is empty
+                        echo "Parameter MY_PARAMETER is empty"
+                        
+                        // Add actions for when the parameter is empty
+                        // For example, you can skip this stage or perform different tasks
+                    }
+                }
+            }
+        }
+    }
+}
+
+pipeline {
+    agent any
+    
+    parameters {
+        string(name: 'MY_PARAMETER', defaultValue: '', description: 'My custom parameter')
+    }
+    
+    stages {
+        stage('Check Parameter') {
+            steps {
+                script {
+                    if (params.MY_PARAMETER.isEmpty()) {
+                        // The parameter is not set
+                        echo "Parameter MY_PARAMETER is not set"
+                        
+                        // Add actions for when the parameter is not set
+                        // For example, you can skip this stage or perform a different task
+                    } else if (params.MY_PARAMETER == 'some_value') {
+                        // The parameter is set to 'some_value'
+                        echo "Parameter MY_PARAMETER is set to some_value"
+                        
+                        // Add actions for when the parameter is set to 'some_value'
+                    } else if (params.MY_PARAMETER == 'another_value') {
+                        // The parameter is set to 'another_value'
+                        echo "Parameter MY_PARAMETER is set to another_value"
+                        
+                        // Add actions for when the parameter is set to 'another_value'
+                    } else {
+                        // The parameter is set but doesn't match any expected values
+                        echo "Parameter MY_PARAMETER is set to an unexpected value: ${params.MY_PARAMETER}"
+                        
+                        // Add actions for this case
+                    }
+                }
+            }
+        }
+    }
+}

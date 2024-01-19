@@ -1,0 +1,126 @@
+pipeline {
+    agent none
+    stages {
+        stage('Checkout') {
+			agent any
+            steps {
+              echo "Cloning the source code........" 
+            }
+        }
+        stage('compile') {
+			agent {
+				Label "Linux"
+			}
+            steps {
+               echo "Compiling the application........" 
+            }
+        }
+        stage('build') {
+			agent {
+				Label "Windows"
+			}
+            steps {
+               echo "Building the application........"
+            }
+        }
+        stage('test') {
+			agent any // run on any node
+            steps {
+              echo "Testing the application........" 
+            }
+        }
+        stage('package') {
+			agent {
+				Label "Linux"
+			}
+            steps {
+               echo "Packaging the application........"
+            }
+        }
+        stage('deploy') {
+			agent {
+				Label "AWS-LINUX"
+			}
+            steps {
+               echo "Deploying the application........"
+            }
+        }
+    }
+}
+
+
+pipeline {
+	agent none
+	stages {
+		stage('Checkout') {
+			agent {
+				label "Master"
+			}
+			steps {
+				echo "Cloning the code from VCS"
+			}
+		}
+		stage('Compile') {
+			agent {
+				label "Master"
+			}
+			when {
+				expression {
+					currentBuild.result == null || currentBuild.result == 'SUCCESS'
+				}
+			}
+			steps {
+				echo "Compiling the application"
+				sh 'cat /etc/*release'
+			}
+		}
+		stage('Buiid') {
+			agent {
+				label "Master"
+			}
+			when {
+				expression {
+					currentBuild.result == null || currentBuild.result == 'SUCCESS'
+				}
+			}
+			steps {
+				echo "Building the application"
+				sh 'cat /etc/*release'
+			}
+		}
+		stage('Test') {
+			agent {
+				label "Master"
+			}
+			when {
+				expression {
+					currentBuild.result == null || currentBuild.result == 'SUCCESS'
+				}
+			}
+			steps {
+				echo "Testing the application"
+				sh 'cat /etc/*release'
+			}
+		}
+		stage('deploy') {
+			agent {
+				label "Master"
+			}
+			when {
+				expression {
+					currentBuild.result == null || currentBuild.result == 'SUCCESS'
+				}
+			}
+			steps {
+				echo "Deploying the application"
+				sh 'cat /etc/*release'
+			}
+		}
+	}
+	post {
+		failure {
+			mail bcc: '', body: '''Hi 
+			Please Check Jenkins the job failed.''', cc: '', from: '', replyTo: '', subject: 'Jenkins Job Notification', to: 'tiajearad44@gmail.com'
+		}
+	}
+}

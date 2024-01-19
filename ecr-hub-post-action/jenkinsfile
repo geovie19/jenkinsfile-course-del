@@ -1,0 +1,19 @@
+def deploy_docker_swarm() {
+    sh """
+        pwd
+        ls -l
+        sed -i "s|PHONE_IMAGE|${params.TAG}|g" docker-compose.yml
+        sed -i "s|RESTAURANT_IMAGE|${params.TAG}|g" docker-compose.yml
+        sed -i "s|HALLOWEEN_IMAGE|${params.TAG}|g" docker-compose.yml
+        sed -i "s|ARTICLES_IMAGE|${params.TAG}|g" docker-compose.yml
+        sed -i "s|BIGRAPHY_IMAGE|${params.TAG}|g" docker-compose.yml
+        sed -i "s|COVID19_IMAGE|${params.TAG}|g" docker-compose.yml
+        sed -i "s|CREATIVE_IMAGE|${params.TAG}|g" docker-compose.yml
+
+        cat docker-compose.yml
+        sudo docker stack deploy -c docker-compose.yml dev-applications
+        sleep 60
+        sudo docker service ls
+        sudo docker ps
+    """
+}

@@ -1,0 +1,59 @@
+pipeline {
+    agent {label 'api-build'}
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        skipDefaultCheckout(true)
+        disableConcurrentBuilds()
+        timeout (time: 10, unit: 'MINUTES')
+        timestamps()
+    }
+    parameters { 
+        string (name: 'branchName', defaultValue: 'develop', description: '')
+        string (name: 'parameter1', defaultValue: 'develop', description: '')
+        string (name: 'parameter2', defaultValue: 'develop', description: '')
+        string (name: 'parameter3', defaultValue: 'develop', description: '')
+    }
+    stages {
+         stage ('Checkout') {
+            steps {
+                dir("${WORKSPACE}/code") {
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: "*/${params.branchName}"]],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [[$class: 'LocalBranch']],
+                        submoduleCfg: [],
+                        userRemoteConfigs: [[
+                        url: 'https://github.com/repo',
+                        credentialsId: 'github-credential'
+                        ]]
+                    ])
+                }
+            }
+        }
+        stage('Updating Services') {
+            steps {
+                script {
+                    dir("${WORKSPACE}/code") {
+                        def deployApproved = input(
+                            id: 'deployApproval',
+                            message: 'THE ENVIRONMENT IS PRODUCTION. Do you want to deploy?',
+                            submitterParameter: 'Approve',
+                            parameters: [
+                                [$class: 'BooleanParameterDefinition', 
+                                defaultValue: false, 
+                                description: 'Click on the check box on hit Proceed to Approve deployment or Abort to abort the deployment?', name: 'Approve']
+                            ]
+                        )
+                        if (deployApproved) {
+                            sh """
+                            sudo chmod +x ${WORKSPACE}/code/script-001.sh
+                            sudo bash ${WORKSPACE}/code/script-001.sh ${params.parameter1} ${params.parameter2} ${params.parameter3}
+                            """
+                        }
+                    } 
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,67 @@
+pipeline {
+    agent none
+    options {
+    buildDiscarder(logRotator(numToKeepStr: '20'))
+    disableConcurrentBuilds()
+    timeout (time: 10, unit: 'MINUTES')
+    timestamps()
+  }
+  stages {
+      stage ('Clone') {
+          agent {
+              docker { image 'bitnami/git'}
+          }
+          steps {
+              sh 'ls -l'
+          }
+      }
+      stage ('Build') {
+          agent {
+              docker { image 'maven:latest'}
+          }
+          steps {
+              sh 'ls -l'
+          }
+      }
+      stage ('Test') {
+          agent {
+              docker { image 'openjdk'}
+          }
+          steps {
+              sh 'ls -l'
+          }
+      }
+      stage ('Push') {
+          agent {
+              docker { image 'ubuntu'}
+          }
+          steps {
+              sh 'ls -l'
+          }
+      }
+      stage ('Deploy') {
+          agent {
+              docker { image 'tomcat'}
+          }
+          steps {
+              sh 'ls -l'
+          }
+      }
+      stage('SonarQube analysis') {
+            steps {
+                script {
+                    def sourceCodeDir = "${WORKSPACE}/code/application/${params.APP_NAME}"
+                    def scannerHome='/opt/sonar-scanner'
+                    dir(sourceCodeDir) {
+                        docker.image('sonarsource/sonar-scanner-cli:5').inside {
+                            withSonarQubeEnv('SonarScanner') { // this SonarScanner must be the same as the one configire in global in jenkins so that SonarQube will get the credentials to publish of SonarQube analysis to SonarQube UI
+                                sh "ls"
+                                sh "${scannerHome}/bin/sonar-scanner"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+  }
+}

@@ -1,0 +1,58 @@
+pipeline {
+    agent {
+        label 'master'
+    }
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        skipDefaultCheckout(true)
+        disableConcurrentBuilds()
+        timeout (time: 10, unit: 'MINUTES')
+        timestamps()
+    }
+    parameters { 
+        string (name: 'branchName', defaultValue: 'develop', description: 'The release branch that you want to checkout')
+    }
+    stages {
+         stage ('Checkout') {
+            steps {
+                dir("${WORKSPACE}/code") {
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: "*/${params.branchName}"]],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [[$class: 'LocalBranch']],
+                        submoduleCfg: [],
+                        userRemoteConfigs: [[
+                        url: 'https://github.com/repo',
+                        credentialsId: 'github-credential'
+                        ]]
+                    ])
+                }
+            }
+        }
+        stage('Updating Services') {
+            steps {
+                script {
+                    dir("${WORKSPACE}/code") {
+                        def deployApproved = input(
+                            id: 'deployApproval',
+                            message: 'THE ENVIRONMENT IS PRODUCTION. Do you want to deploy?',
+                            submitterParameter: 'Approve',
+                            parameters: [
+                                [$class: 'BooleanParameterDefinition', 
+                                defaultValue: false, 
+                                description: 'Click on the check box on hit Proceed to Approve deployment or Abort to abort the deployment?', name: 'Approve']
+                            ]
+                        )
+                        if (deployApproved) {
+                            sh """
+                            sudo chmod +x ${WORKSPACE}/script/hotfix.sh
+                            sudo bash ${WORKSPACE}/script/hotfix.sh
+                            """
+                        }
+                    } 
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,29 @@
+pipeline {
+    agent {
+       label 'master'
+    }
+    
+    stages {
+        stage ('Setting Up Variables') {
+            steps {
+                script {
+                    wrap([$class: 'BuildUser']) {
+                        sh """
+                            echo "BUILD_USER -- full name of user started build: $BUILD_USER"
+                            echo "BUILD_USER_FIRST_NAME -- first name of user started build: $BUILD_USER_FIRST_NAME"
+                            echo "BUILD_USER_LAST_NAME -- last name of user started build: $BUILD_USER_LAST_NAME"
+                            echo "BUILD_USER_ID -- id of user started build: $BUILD_USER_ID"
+                            echo "BUILD_USER_EMAIL -- email of user started build: $BUILD_USER_EMAIL"
+                        """
+                    }
+                }
+            }
+        }
+        stage ('Clean up') {
+            steps {
+                cleanWs()
+            }
+        }
+    }
+}
+

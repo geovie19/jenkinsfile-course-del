@@ -1,0 +1,56 @@
+
+pipeline {
+    agent {label 'api-build'}
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        skipDefaultCheckout(true)
+        disableConcurrentBuilds()
+        timeout (time: 10, unit: 'MINUTES')
+        timestamps()
+    }
+    parameters { 
+        string (name: 'branchName', defaultValue: 'develop', description: '')
+        string (name: 'PARAMETER1', defaultValue: 'develop', description: '')
+        string (name: 'PARAMETER2', defaultValue: 'develop', description: '')
+        string (name: 'PARAMETER3', defaultValue: 'develop', description: '')
+        string (name: 'PARAMETER4', defaultValue: 'develop', description: '')
+    }
+    stages {
+         stage ('Checkout') {
+            steps {
+                dir("${WORKSPACE}/code") {
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: "*/${params.branchName}"]],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [[$class: 'LocalBranch']],
+                        submoduleCfg: [],
+                        userRemoteConfigs: [[
+                        url: 'https://github.com/repo',
+                        credentialsId: 'github-credential'
+                        ]]
+                    ])
+                }
+            }
+        }
+        stage('test') {
+            steps {
+                script {
+                    settingUpVariable()
+                }
+            }
+        }
+    }
+}
+
+
+def settingUpVariable() {
+    sh """
+    sed -i "s|PARAMETER1|${params.PARAMETER1}|g" docker-compose.yml
+    sed -i "s|PARAMETER2|${params.PARAMETER2}|g" docker-compose.yml
+    sed -i "s|PARAMETER3|${params.PARAMETER3}|g" docker-compose.yml
+    sed -i "s|PARAMETER4|${params.PARAMETER4}|g" docker-compose.yml
+    
+    cat docker-compose.yml
+    """
+}
